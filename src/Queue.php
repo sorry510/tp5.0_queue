@@ -29,6 +29,8 @@ class Queue
     /** @var Connector */
     protected static $connector;
 
+    private static $errNum = 0; // 错误次数
+
     private static function buildConnector()
     {
         if (!isset(self::$connector)) {
@@ -49,6 +51,7 @@ class Queue
     private static function isRedisConnectException($message)
     {
         if (Str::contains($message, 'went away')) {
+            // 客户端端失去连接
             return true;
         }
         if (Str::contains($message, 'errno=10054')) {
@@ -61,12 +64,27 @@ class Queue
     public static function __callStatic($name, $arguments)
     {
         try {
-            return call_user_func_array([self::buildConnector(), $name], $arguments);
+            $result = call_user_func_array([self::buildConnector(), $name], $arguments);
+            self::$errNum = 0;
+            return $result;
         } catch (RedisException $e) {
+            self::$errNum++;
+            if (self::$errNum++ > 3) {
+                throw $e;
+            }
             if (self::isRedisConnectException($e->getMessage())) {
                 self::createConnector();
+                return call_user_func_array([self::buildConnector(), $name], $arguments);
             }
-            throw $e;
+        } catch (\think\exception\ErrorException $e) {
+            self::$errNum++;
+            if (self::$errNum++ > 3) {
+                throw $e;
+            }
+            if (self::isRedisConnectException($e->getMessage())) {
+                self::createConnector();
+                return call_user_func_array([self::buildConnector(), $name], $arguments);
+            }
         }
     }
 }
