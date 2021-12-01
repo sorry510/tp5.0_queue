@@ -10,19 +10,19 @@
 // +----------------------------------------------------------------------
 namespace think\queue\command;
 
+use Exception;
+use think\Cache;
 use think\Config;
 use think\console\Command;
 use think\console\Input;
 use think\console\input\Option;
 use think\console\Output;
+use think\exception\Handle;
+use think\exception\ThrowableError;
 use think\Hook;
 use think\queue\Job;
 use think\queue\Worker;
-use Exception;
 use Throwable;
-use think\Cache;
-use think\exception\Handle;
-use think\exception\ThrowableError;
 
 class Work extends Command
 {
@@ -42,12 +42,12 @@ class Work extends Command
     {
         $this->setName('queue:work')
             ->addOption('queue', null, Option::VALUE_OPTIONAL, 'The queue to listen on')
-            ->addOption('daemon', null, Option::VALUE_NONE, 'Run the worker in daemon mode')
+            ->addOption('daemon', null, Option::VALUE_NONE, 'Run the worker in daemon mode', 1)
             ->addOption('delay', null, Option::VALUE_OPTIONAL, 'Amount of time to delay failed jobs', 0)
             ->addOption('force', null, Option::VALUE_NONE, 'Force the worker to run even in maintenance mode')
-            ->addOption('memory', null, Option::VALUE_OPTIONAL, 'The memory limit in megabytes', 128)
+            ->addOption('memory', null, Option::VALUE_OPTIONAL, 'The memory limit in megabytes', 512)
             ->addOption('sleep', null, Option::VALUE_OPTIONAL, 'Number of seconds to sleep when no job is available', 3)
-            ->addOption('tries', null, Option::VALUE_OPTIONAL, 'Number of times to attempt a job before logging it failed', 0)
+            ->addOption('tries', null, Option::VALUE_OPTIONAL, 'Number of times to attempt a job before logging it failed', 3)
             ->setDescription('Process the next job on a queue');
     }
 
@@ -109,12 +109,12 @@ class Work extends Command
                 $queue, $delay, $sleep, $maxTries
             );
 
-            if ( $this->memoryExceeded($memory) ) {
+            if ($this->memoryExceeded($memory)) {
                 Hook::listen('worker_memory_exceeded', $queue);
                 $this->stop();
             }
-            
-            if ( $this->queueShouldRestart($lastRestart) ) {
+
+            if ($this->queueShouldRestart($lastRestart)) {
                 Hook::listen('worker_queue_restart', $queue);
                 $this->stop();
             }
