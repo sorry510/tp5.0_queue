@@ -42,7 +42,7 @@ class Work extends Command
     {
         $this->setName('queue:work')
             ->addOption('queue', null, Option::VALUE_OPTIONAL, 'The queue to listen on')
-            ->addOption('daemon', null, Option::VALUE_NONE, 'Run the worker in daemon mode', 1)
+            ->addOption('daemon', null, Option::VALUE_NONE, 'Run the worker in daemon mode')
             ->addOption('delay', null, Option::VALUE_OPTIONAL, 'Amount of time to delay failed jobs', 0)
             ->addOption('force', null, Option::VALUE_NONE, 'Force the worker to run even in maintenance mode')
             ->addOption('memory', null, Option::VALUE_OPTIONAL, 'The memory limit in megabytes', 512)
